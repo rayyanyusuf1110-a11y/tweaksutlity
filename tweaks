@@ -1,0 +1,2225 @@
+using Microsoft.Win32;
+using static Win;
+
+public static class Catalog
+{
+    const string GAME = "Gaming";
+    const string STREAM = "Streaming";
+    const string POWER = "Power";
+    const string NET = "Network";
+    const string VIS = "Visuals";
+    const string PRIV = "Privacy";
+    const string UPD = "Windows Update";
+    const string SYS = "System";
+    const string SVC = "Services";
+
+    const string CV = @"Software\Microsoft\Windows\CurrentVersion";
+    const string POL = @"SOFTWARE\Policies\Microsoft\Windows";
+    const string GB = @"Software\Microsoft\GameBar";
+    const string SP = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
+
+    public static readonly List<Tweak> Tweaks = Build();
+
+    static List<Tweak> Build()
+    {
+        List<Tweak> L = new List<Tweak>();
+
+        // =====================================================
+        // GAMING
+        // =====================================================
+        L.Add(Toggle("gamemode", GAME, "Windows Game Mode",
+            "Gives your game priority and pauses background updates while it runs. Leave this on.",
+            false, true,
+            Dw(HKCU, GB, "AutoGameModeEnabled", 1, 0),
+            Dw(HKCU, GB, "AllowAutoGameMode", 1, 0)));
+
+        L.Add(Toggle("dvr", GAME, "Turn off Game DVR recording",
+            "Stops Xbox Game Bar from recording in the background, which frees up CPU and GPU.",
+            false, false,
+            Dw(HKCU, CV + @"\GameDVR", "AppCaptureEnabled", 0, 1),
+            Dw(HKCU, @"System\GameConfigStore", "GameDVR_Enabled", 0, 1),
+            Dw(HKLM, POL + @"\GameDVR", "AllowGameDVR", 0, null)));
+
+        L.Add(Toggle("gamebar", GAME, "Turn off Game Bar popups",
+            "Stops the Game Bar overlay and its startup panel from popping up over your game.",
+            false, false,
+            Dw(HKCU, GB, "UseNexusForGameBarEnabled", 0, 1),
+            Dw(HKCU, GB, "ShowStartupPanel", 0, 1)));
+
+        L.Add(Toggle("hags", GAME, "Hardware-accelerated GPU scheduling",
+            "Lets the GPU manage its own memory queue. Helps on recent GPUs. If you see new stutter, switch it off.",
+            true, false,
+            Dw(HKLM, @"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1)));
+
+        L.Add(Toggle("fse", GAME, "Turn off fullscreen optimizations",
+            "Games use true fullscreen instead of Windows' hybrid mode. Results vary, so test with it on and off.",
+            false, false,
+            Dw(HKCU, @"System\GameConfigStore", "GameDVR_FSEBehaviorMode", 2, 0),
+            Dw(HKCU, @"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 1, 0),
+            Dw(HKCU, @"System\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 1, 0),
+            Dw(HKCU, @"System\GameConfigStore", "GameDVR_EFSEFeatureFlags", 0, 0)));
+
+        L.Add(Toggle("windowedopt", GAME, "Optimizations for windowed games",
+            "Lets Windows use a faster presentation mode for games running in a window or borderless window.",
+            false, false,
+            Str(HKCU, @"Software\Microsoft\DirectX\UserGpuPreferences", "DirectXUserGlobalSettings",
+                "SwapEffectUpgradeEnable=1;", "SwapEffectUpgradeEnable=0;")));
+
+        L.Add(Toggle("mouse", GAME, "Turn off mouse acceleration",
+            "Pointer speed matches your hand speed exactly, so your aim is consistent.",
+            true, false,
+            Str(HKCU, @"Control Panel\Mouse", "MouseSpeed", "0", "1"),
+            Str(HKCU, @"Control Panel\Mouse", "MouseThreshold1", "0", "6"),
+            Str(HKCU, @"Control Panel\Mouse", "MouseThreshold2", "0", "10")));
+
+        L.Add(Toggle("kbdelay", GAME, "Faster key repeat",
+            "Shortens the delay before a held key starts repeating.",
+            true, false,
+            Str(HKCU, @"Control Panel\Keyboard", "KeyboardDelay", "0", "1")));
+
+        L.Add(Toggle("stickykeys", GAME, "Stop Sticky Keys popups",
+            "Pressing Shift five times in a game no longer opens a window that minimises it.",
+            true, false,
+            Str(HKCU, @"Control Panel\Accessibility\StickyKeys", "Flags", "506", "510"),
+            Str(HKCU, @"Control Panel\Accessibility\Keyboard Response", "Flags", "122", "126"),
+            Str(HKCU, @"Control Panel\Accessibility\ToggleKeys", "Flags", "58", "62")));
+
+        L.Add(Toggle("gamepriority", GAME, "Give games higher CPU and disk priority",
+            "Tells Windows' scheduler to favour games over background tasks.",
+            false, false,
+            Dw(HKLM, SP + @"\Tasks\Games", "Priority", 6, 2),
+            Str(HKLM, SP + @"\Tasks\Games", "Scheduling Category", "High", "Medium"),
+            Str(HKLM, SP + @"\Tasks\Games", "SFIO Priority", "High", "Normal"),
+            Dw(HKLM, SP + @"\Tasks\Games", "GPU Priority", 8, 8)));
+
+        L.Add(Toggle("netthrottle", GAME, "Remove network throttling",
+            "Stops Windows limiting network packets while games and media apps run, and favours foreground apps.",
+            false, false,
+            Dw(HKLM, SP, "NetworkThrottlingIndex", -1, 10),
+            Dw(HKLM, SP, "SystemResponsiveness", 0, 20)));
+
+        L.Add(Toggle("foreground", GAME, "Favour the app you are using",
+            "Gives the window in front more CPU time than background programs.",
+            false, false,
+            Dw(HKLM, @"SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", 38, 2)));
+
+        // =====================================================
+        // STREAMING
+        // =====================================================
+        L.Add(Toggle("toasts", STREAM, "Hide notification popups",
+            "Stops Windows notifications appearing on screen, so they do not show up on your stream.",
+            false, false,
+            Dw(HKCU, CV + @"\PushNotifications", "ToastEnabled", 0, 1)));
+
+        L.Add(Toggle("ducking", STREAM, "Stop Windows lowering volume",
+            "Windows no longer turns your game or music down when it detects a call or voice chat.",
+            false, false,
+            Dw(HKCU, @"Software\Microsoft\Multimedia\Audio", "UserDuckingPreference", 3, null)));
+
+        L.Add(Toggle("noreboot", STREAM, "No surprise restarts after updates",
+            "Windows will not restart by itself while you are signed in. You must restart yourself to finish updates.",
+            false, false,
+            Dw(HKLM, POL + @"\WindowsUpdate\AU", "NoAutoRebootWithLoggedOnUsers", 1, null)));
+
+        // =====================================================
+        // POWER
+        // =====================================================
+        L.Add(Custom("power", POWER, "High performance power plan",
+            "Keeps the CPU at full speed instead of slowing down. Uses more battery on a laptop.",
+            false,
+            () => ActiveScheme().IndexOf("High performance", StringComparison.OrdinalIgnoreCase) >= 0,
+            () => ActivateScheme("High performance", "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"),
+            () => Cmd("powercfg.exe", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e")));
+
+        L.Add(Custom("ultimate", POWER, "Ultimate Performance power plan",
+            "Windows' most aggressive plan. Highest heat and power use.",
+            false,
+            () => ActiveScheme().IndexOf("Ultimate", StringComparison.OrdinalIgnoreCase) >= 0,
+            () => ActivateScheme("Ultimate Performance", "e9a42b02-d5df-448d-aa00-03f14749eb61"),
+            () => Cmd("powercfg.exe", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e")));
+
+        L.Add(PowerSetting("cpumin", POWER, "CPU always at full speed (plugged in)",
+            "Sets the minimum CPU speed to 100% when plugged in, so it never has to ramp up.",
+            "54533251-82be-4824-96c1-47b60b740d00", "893dee8e-2bef-41e0-89c6-b55d0929964c", 100, 5));
+
+        L.Add(PowerSetting("coreparking", POWER, "Stop CPU core parking (plugged in)",
+            "Keeps all CPU cores awake instead of putting some to sleep.",
+            "54533251-82be-4824-96c1-47b60b740d00", "0cc5b647-c1df-4637-891a-dec35c318583", 100, 10));
+
+        L.Add(PowerSetting("usbsuspend", POWER, "Stop USB power saving (plugged in)",
+            "Stops Windows switching off USB devices like your mouse, headset or capture card to save power.",
+            "2a737441-1930-4402-8d77-b2bebba308a3", "48e6b7a6-50f5-4782-a5d4-53bb8f07e226", 0, 1));
+
+        L.Add(PowerSetting("pcie", POWER, "Stop PCIe power saving (plugged in)",
+            "Keeps your GPU and SSD links at full speed instead of dropping to a low power state.",
+            "501a4d13-42af-4429-9fd1-a8218c268e20", "ee12f906-d277-404b-b6da-e5fa1a576df5", 0, 2));
+
+        L.Add(PowerSetting("diskidle", POWER, "Never spin down the hard drive (plugged in)",
+            "Stops hard drives going to sleep and causing a pause when a game needs them.",
+            "0012ee47-9041-4b5d-9b77-535fba8b1442", "6738e2c4-e8a5-4a42-b16a-e040e769756e", 0, 1200));
+
+        L.Add(Custom("hibernate", POWER, "Turn off hibernation",
+            "Deletes the hibernation file, which frees disk space about the size of your RAM. You lose Hibernate and Fast Startup.",
+            false,
+            () =>
+            {
+                object v = Get(HKLM, @"SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled");
+                return v != null && v.Equals(0);
+            },
+            () => Cmd("powercfg.exe", "/hibernate off"),
+            () => Cmd("powercfg.exe", "/hibernate on")));
+
+        L.Add(Toggle("faststartup", POWER, "Turn off Fast Startup",
+            "Makes Shut down a full shutdown. Fixes odd problems that only go away after a restart.",
+            false, false,
+            Dw(HKLM, @"SYSTEM\CurrentControlSet\Control\Session Manager\Power", "HiberbootEnabled", 0, 1)));
+
+        // =====================================================
+        // NETWORK
+        // =====================================================
+        L.Add(Nagle("nagle", NET, "Lower network delay (turn off Nagle)",
+            "Sends small packets straight away instead of bundling them. Can reduce ping in some online games."));
+
+        L.Add(Toggle("dopt", NET, "Stop sharing Windows updates with other PCs",
+            "Windows only downloads updates from Microsoft and does not upload them to strangers using your internet.",
+            false, false,
+            Dw(HKLM, POL + @"\DeliveryOptimization", "DODownloadMode", 0, null)));
+
+        // =====================================================
+        // VISUALS
+        // =====================================================
+        L.Add(Toggle("transparency", VIS, "Turn off transparency effects",
+            "Removes the see-through blur on the taskbar and windows, which saves GPU work.",
+            false, false,
+            Dw(HKCU, CV + @"\Themes\Personalize", "EnableTransparency", 0, 1)));
+
+        L.Add(Toggle("visualfx", VIS, "Best-performance visual effects",
+            "Switches Windows to its fastest appearance settings.",
+            true, false,
+            Dw(HKCU, CV + @"\Explorer\VisualEffects", "VisualFXSetting", 2, 0)));
+
+        L.Add(Toggle("animations", VIS, "Turn off window animations",
+            "Windows minimise and maximise instantly.",
+            true, false,
+            Str(HKCU, @"Control Panel\Desktop\WindowMetrics", "MinAnimate", "0", "1")));
+
+        L.Add(Toggle("taskbaranim", VIS, "Turn off taskbar animations",
+            "Taskbar buttons stop sliding and fading.",
+            true, false,
+            Dw(HKCU, CV + @"\Explorer\Advanced", "TaskbarAnimations", 0, 1)));
+
+        L.Add(Toggle("menudelay", VIS, "Instant menus",
+            "Removes the short delay before menus open.",
+            true, false,
+            Str(HKCU, @"Control Panel\Desktop", "MenuShowDelay", "0", "400")));
+
+        L.Add(Toggle("aeropeek", VIS, "Turn off Aero Peek",
+            "Stops the desktop preview when you hover the corner of the taskbar.",
+            true, false,
+            Dw(HKCU, @"Software\Microsoft\Windows\DWM", "EnableAeroPeek", 0, 1)));
+
+        L.Add(Toggle("shake", VIS, "Turn off Aero Shake",
+            "Stops windows minimising when you shake one.",
+            true, false,
+            Dw(HKCU, CV + @"\Explorer\Advanced", "DisallowShaking", 1, null)));
+
+        L.Add(Toggle("widgets", VIS, "Hide news and weather on the taskbar",
+            "Removes the news and weather widget, which runs in the background. Restart Explorer or sign out to see it go.",
+            true, false,
+            Dw(HKCU, CV + @"\Feeds", "ShellFeedsTaskbarViewMode", 2, 0),
+            Dw(HKLM, POL + @"\Windows Feeds", "EnableFeeds", 0, null),
+            Dw(HKLM, POL + @"\Dsh", "AllowNewsAndInterests", 0, null)));
+
+        L.Add(Toggle("nolockscreen", VIS, "Skip the lock screen",
+            "Goes straight to the sign-in box.",
+            true, false,
+            Dw(HKLM, POL + @"\Personalization", "NoLockScreen", 1, null)));
+
+        // =====================================================
+        // PRIVACY
+        // =====================================================
+        L.Add(Toggle("telemetry", PRIV, "Reduce Windows diagnostic data",
+            "Sends Microsoft the minimum diagnostic data Windows allows on your edition.",
+            false, false,
+            Dw(HKLM, POL + @"\DataCollection", "AllowTelemetry", 0, null)));
+
+        L.Add(Toggle("adid", PRIV, "Turn off the advertising ID",
+            "Stops apps using a personal ID to show you targeted ads.",
+            false, false,
+            Dw(HKCU, CV + @"\AdvertisingInfo", "Enabled", 0, 1)));
+
+        L.Add(Toggle("tailored", PRIV, "Turn off tailored experiences",
+            "Stops Windows using your diagnostic data to suggest things to you.",
+            false, false,
+            Dw(HKCU, CV + @"\Privacy", "TailoredExperiencesWithDiagnosticDataEnabled", 0, 1)));
+
+        List<RegVal> ads = new List<RegVal>();
+        string[] adNames = new string[]
+        {
+            "SubscribedContent-338388Enabled", "SubscribedContent-338389Enabled", "SubscribedContent-353694Enabled",
+            "SubscribedContent-353696Enabled", "SubscribedContent-310093Enabled", "SubscribedContent-338393Enabled",
+            "SystemPaneSuggestionsEnabled", "SilentInstalledAppsEnabled", "SoftLandingEnabled",
+            "OemPreInstalledAppsEnabled", "PreInstalledAppsEnabled", "ContentDeliveryAllowed"
+        };
+        foreach (string n in adNames) ads.Add(Dw(HKCU, CV + @"\ContentDeliveryManager", n, 0, 1));
+        L.Add(Toggle("ads", PRIV, "Stop suggested apps, tips and ads",
+            "Removes ads and app suggestions from Start, Settings and the lock screen, and stops apps being installed for you.",
+            false, false, ads.ToArray()));
+
+        L.Add(Toggle("activity", PRIV, "Turn off activity history",
+            "Stops Windows keeping a timeline of what you open.",
+            false, false,
+            Dw(HKLM, POL + @"\System", "EnableActivityFeed", 0, null),
+            Dw(HKLM, POL + @"\System", "PublishUserActivities", 0, null),
+            Dw(HKLM, POL + @"\System", "UploadUserActivities", 0, null)));
+
+        L.Add(Toggle("location", PRIV, "Turn off location tracking",
+            "Apps and Windows cannot see where you are. This also stops Find my device.",
+            false, false,
+            Dw(HKLM, POL + @"\LocationAndSensors", "DisableLocation", 1, null)));
+
+        L.Add(Toggle("bing", PRIV, "No web results in Start search",
+            "Start search only searches your PC, which is faster and does not send what you type to Bing.",
+            false, false,
+            Dw(HKCU, @"Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 1, null),
+            Dw(HKCU, CV + @"\Search", "BingSearchEnabled", 0, 1)));
+
+        L.Add(Toggle("cortana", PRIV, "Turn off Cortana",
+            "Stops Cortana running in the background.",
+            false, false,
+            Dw(HKLM, POL + @"\Windows Search", "AllowCortana", 0, null)));
+
+        L.Add(Toggle("copilot", PRIV, "Turn off Windows Copilot",
+            "Removes the Copilot button and stops it loading. Windows 11 only.",
+            true, false,
+            Dw(HKCU, @"Software\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot", 1, null)));
+
+        L.Add(Toggle("feedback", PRIV, "Stop feedback popups",
+            "Windows stops asking you to rate your experience.",
+            false, false,
+            Dw(HKCU, @"Software\Microsoft\Siuf\Rules", "NumberOfSIUFInPeriod", 0, null)));
+
+        L.Add(Toggle("apptrack", PRIV, "Stop tracking which apps you launch",
+            "Start no longer builds a list of your most used apps.",
+            false, false,
+            Dw(HKCU, CV + @"\Explorer\Advanced", "Start_TrackProgs", 0, 1)));
+
+        L.Add(Toggle("werport", PRIV, "Turn off Windows Error Reporting",
+            "Windows stops sending crash reports to Microsoft.",
+            false, false,
+            Dw(HKLM, @"SOFTWARE\Microsoft\Windows\Windows Error Reporting", "Disabled", 1, null)));
+
+        L.Add(Toggle("edgebg", PRIV, "Stop Edge running in the background",
+            "Edge no longer preloads at startup or stays open after you close it. Edge may say it is managed by your organisation.",
+            false, false,
+            Dw(HKLM, @"SOFTWARE\Policies\Microsoft\Edge", "StartupBoostEnabled", 0, null),
+            Dw(HKLM, @"SOFTWARE\Policies\Microsoft\Edge", "BackgroundModeEnabled", 0, null)));
+
+        // =====================================================
+        // WINDOWS UPDATE
+        // =====================================================
+        L.Add(Toggle("nodrivers", UPD, "Stop Windows replacing your drivers",
+            "Windows Update will not swap your graphics or other drivers for its own versions.",
+            false, false,
+            Dw(HKLM, POL + @"\WindowsUpdate", "ExcludeWUDriversInQualityUpdate", 1, null)));
+
+        L.Add(Toggle("maintenance", UPD, "Turn off automatic maintenance",
+            "Stops Windows starting its maintenance tasks on its own while you are using the PC.",
+            false, false,
+            Dw(HKLM, @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\Maintenance", "MaintenanceDisabled", 1, null)));
+
+        // =====================================================
+        // SYSTEM
+        // =====================================================
+        L.Add(Toggle("bgapps", SYS, "Stop apps running in the background",
+            "Store apps stop using CPU and RAM while you are not using them.",
+            false, false,
+            Dw(HKCU, CV + @"\BackgroundAccessApplications", "GlobalUserDisabled", 1, 0)));
+
+        L.Add(Toggle("startdelay", SYS, "No delay before startup apps load",
+            "Your startup apps launch straight away after sign-in instead of waiting a few seconds.",
+            false, false,
+            Dw(HKCU, CV + @"\Explorer\Serialize", "StartupDelayInMSec", 0, null)));
+
+        L.Add(Toggle("fastshutdown", SYS, "Faster shutdown",
+            "Windows waits less time for apps and services to close before shutting down.",
+            true, false,
+            Str(HKLM, @"SYSTEM\CurrentControlSet\Control", "WaitToKillServiceTimeout", "2000", "5000"),
+            Str(HKCU, @"Control Panel\Desktop", "WaitToKillAppTimeout", "2000", "20000"),
+            Str(HKCU, @"Control Panel\Desktop", "HungAppTimeout", "1000", "5000"),
+            Str(HKCU, @"Control Panel\Desktop", "AutoEndTasks", "1", "0")));
+
+        L.Add(Toggle("lastaccess", SYS, "Stop recording file access times",
+            "Windows stops writing a timestamp every time a file is opened, which means fewer disk writes.",
+            true, false,
+            Dw(HKLM, @"SYSTEM\CurrentControlSet\Control\FileSystem", "NtfsDisableLastAccessUpdate",
+                unchecked((int)0x80000001), unchecked((int)0x80000002))));
+
+        L.Add(Toggle("pagingexec", SYS, "Keep Windows core in RAM",
+            "Stops Windows moving its own code out to disk. Only worth it with 16 GB of RAM or more.",
+            true, false,
+            Dw(HKLM, @"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management", "DisablePagingExecutive", 1, 0)));
+
+        L.Add(Toggle("remoteassist", SYS, "Turn off Remote Assistance",
+            "Nobody can be invited to control your PC with Remote Assistance.",
+            false, false,
+            Dw(HKLM, @"SYSTEM\CurrentControlSet\Control\Remote Assistance", "fAllowToGetHelp", 0, 1)));
+
+        // =====================================================
+        // SERVICES (background programs Windows runs)
+        // =====================================================
+        L.Add(Service("svc-diagtrack", SVC, "Turn off Connected User Experiences and Telemetry",
+            "Stops the main diagnostic data service (DiagTrack).",
+            "DiagTrack", "auto"));
+
+        L.Add(Service("svc-wap", SVC, "Turn off WAP Push message routing",
+            "Stops a telemetry helper service (dmwappushservice).",
+            "dmwappushservice", "demand"));
+
+        L.Add(Service("svc-sysmain", SVC, "Turn off SysMain (Superfetch)",
+            "Stops Windows preloading apps into memory. Fine on an SSD. Keep it on if you use a hard drive.",
+            "SysMain", "auto"));
+
+        L.Add(Service("svc-search", SVC, "Turn off Windows Search indexing",
+            "Stops the background file indexer. Searching for files in Explorer becomes slower.",
+            "WSearch", "delayed-auto"));
+
+        L.Add(Service("svc-maps", SVC, "Turn off Downloaded Maps Manager",
+            "Stops a service that updates offline maps. Only matters if you use the Maps app.",
+            "MapsBroker", "delayed-auto"));
+
+        L.Add(Service("svc-geo", SVC, "Turn off Geolocation Service",
+            "Stops the service that tells apps where you are.",
+            "lfsvc", "demand"));
+
+        L.Add(Service("svc-retail", SVC, "Turn off Retail Demo Service",
+            "Stops a shop-display demo service nobody needs at home.",
+            "RetailDemo", "demand"));
+
+        L.Add(Service("svc-insider", SVC, "Turn off Windows Insider Service",
+            "Stops the service for Windows preview builds.",
+            "wisvc", "demand"));
+
+        L.Add(Service("svc-wer", SVC, "Turn off Windows Error Reporting Service",
+            "Stops the service that collects crash reports.",
+            "WerSvc", "demand"));
+
+        L.Add(Service("svc-phone", SVC, "Turn off Phone Service",
+            "Stops the service that links your phone to Windows telephony.",
+            "PhoneSvc", "demand"));
+
+        L.Add(Service("svc-spooler", SVC, "Turn off Print Spooler",
+            "Stops printing completely. Only turn this off if you never print.",
+            "Spooler", "auto"));
+
+        L.Add(Service("svc-xbl1", SVC, "Turn off Xbox Live Auth Manager",
+            "Stops Xbox sign-in. Fortnite through Epic does not need it. Xbox app and Game Pass games do.",
+            "XblAuthManager", "demand"));
+
+        L.Add(Service("svc-xbl2", SVC, "Turn off Xbox Live Game Save",
+            "Stops Xbox cloud saves. Only matters for Xbox or Game Pass games.",
+            "XblGameSave", "demand"));
+
+        L.Add(Service("svc-xbl3", SVC, "Turn off Xbox Live Networking Service",
+            "Stops Xbox network features. Only matters for Xbox or Game Pass games.",
+            "XboxNetApiSvc", "demand"));
+
+        return L;
+    }
+
+    static bool Safe(Func<bool> f)
+    {
+        try { return f(); }
+        catch { return false; }
+    }
+
+    public static object State()
+    {
+        List<object> tweaks = new List<object>();
+        Dictionary<string, bool> map = new Dictionary<string, bool>();
+        foreach (Tweak t in Tweaks)
+        {
+            bool isOn = Safe(t.IsOn);
+            map[t.Id] = isOn;
+            tweaks.Add(new { id = t.Id, section = t.Section, name = t.Name, desc = t.Desc, restart = t.Restart, enabled = isOn });
+        }
+
+        List<object> jobs = new List<object>();
+        foreach (Job j in Jobs.All)
+        {
+            jobs.Add(new { id = j.Id, section = j.Section, name = j.Name, desc = j.Desc });
+        }
+
+        List<object> profiles = new List<object>();
+        foreach (Profile p in Profiles.All)
+        {
+            int active = 0;
+            foreach (string id in p.Ids)
+            {
+                bool v;
+                if (map.TryGetValue(id, out v) && v) active++;
+            }
+            profiles.Add(new { id = p.Id, name = p.Name, tagline = p.Tagline, total = p.Ids.Length, active = active, ids = p.Ids });
+        }
+
+        object cpu = Get(HKLM, @"HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString");
+        string cpuName = cpu == null ? "" : cpu.ToString().Trim();
+
+        return new
+        {
+            os = System.Runtime.InteropServices.RuntimeInformation.OSDescription,
+            cpu = cpuName,
+            tweaks = tweaks,
+            jobs = jobs,
+            profiles = profiles
+        };
+    }
+}
+
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using Microsoft.Win32;
+
+// One registry value a tweak changes. Off == null means "delete the value" (back to the Windows default).
+public class RegVal
+{
+    public RegistryKey Root;
+    public string Path;
+    public string Name;
+    public object On;
+    public object Off;
+    public RegistryValueKind Kind;
+
+    public RegVal(RegistryKey root, string path, string name, object on, object off, RegistryValueKind kind)
+    {
+        Root = root;
+        Path = path;
+        Name = name;
+        On = on;
+        Off = off;
+        Kind = kind;
+    }
+}
+
+// A switch in the panel.
+public class Tweak
+{
+    public string Id = "";
+    public string Section = "";
+    public string Name = "";
+    public string Desc = "";
+    public bool Restart = false;
+    public Func<bool> IsOn = () => false;
+    public Action On = () => { };
+    public Action Off = () => { };
+}
+
+// A button in the panel.
+public class Job
+{
+    public string Id = "";
+    public string Section = "";
+    public string Name = "";
+    public string Desc = "";
+    public Func<string> Run = () => "";
+}
+
+public static class Native
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MEMSTAT
+    {
+        public uint dwLength;
+        public uint dwMemoryLoad;
+        public ulong ullTotalPhys;
+        public ulong ullAvailPhys;
+        public ulong ullTotalPageFile;
+        public ulong ullAvailPageFile;
+        public ulong ullTotalVirtual;
+        public ulong ullAvailVirtual;
+        public ulong ullAvailExtendedVirtual;
+    }
+
+    [DllImport("kernel32.dll")]
+    public static extern bool GlobalMemoryStatusEx(ref MEMSTAT m);
+
+    [DllImport("kernel32.dll")]
+    public static extern bool GetSystemTimes(out long idle, out long kernel, out long user);
+
+    [DllImport("psapi.dll")]
+    public static extern bool EmptyWorkingSet(IntPtr process);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern int SHEmptyRecycleBin(IntPtr hwnd, string root, uint flags);
+
+    public static MEMSTAT Mem()
+    {
+        MEMSTAT m = new MEMSTAT();
+        m.dwLength = (uint)Marshal.SizeOf(typeof(MEMSTAT));
+        GlobalMemoryStatusEx(ref m);
+        return m;
+    }
+}
+
+public static class Win
+{
+    public static readonly RegistryKey HKCU = Registry.CurrentUser;
+    public static readonly RegistryKey HKLM = Registry.LocalMachine;
+
+    // ---------------- running programs ----------------
+
+    public static string Sh(string exe, string args, out int code)
+    {
+        ProcessStartInfo psi = new ProcessStartInfo(exe, args);
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+        using (Process p = Process.Start(psi))
+        {
+            Task<string> err = p.StandardError.ReadToEndAsync();
+            string output = p.StandardOutput.ReadToEnd();
+            p.WaitForExit();
+            output += err.Result;
+            code = p.ExitCode;
+            return output;
+        }
+    }
+
+    // Runs a program and throws if it fails, so the panel can show the reason.
+    public static void Cmd(string exe, string args)
+    {
+        int code;
+        string o = Sh(exe, args, out code);
+        if (code != 0)
+        {
+            string msg = o.Trim();
+            if (msg.Length == 0) msg = exe + " failed (code " + code + ")";
+            throw new Exception(msg);
+        }
+    }
+
+    // Opens a visible window for long jobs (sfc, dism, chkdsk...).
+    public static string Window(string title, string commandLine)
+    {
+        ProcessStartInfo psi = new ProcessStartInfo("cmd.exe",
+            "/c title " + title + " & " + commandLine + " & echo. & echo Finished. You can close this window. & pause");
+        psi.UseShellExecute = true;
+        Process.Start(psi);
+        return "Started in a new window. It can take a while. Close that window when it says Finished.";
+    }
+
+    // ---------------- registry ----------------
+
+    public static object Get(RegistryKey root, string path, string name)
+    {
+        using (RegistryKey k = root.OpenSubKey(path))
+        {
+            if (k == null) return null;
+            return k.GetValue(name);
+        }
+    }
+
+    static void Apply(RegVal v, bool on)
+    {
+        object val = on ? v.On : v.Off;
+        if (val == null)
+        {
+            using (RegistryKey k = v.Root.OpenSubKey(v.Path, true))
+            {
+                if (k != null) k.DeleteValue(v.Name, false);
+            }
+            return;
+        }
+        using (RegistryKey k2 = v.Root.CreateSubKey(v.Path, true))
+        {
+            k2.SetValue(v.Name, val, v.Kind);
+        }
+    }
+
+    // A number setting. off == null deletes the value.
+    public static RegVal Dw(RegistryKey root, string path, string name, int on, int? off)
+    {
+        object offVal = null;
+        if (off.HasValue) offVal = off.Value;
+        return new RegVal(root, path, name, on, offVal, RegistryValueKind.DWord);
+    }
+
+    // A text setting. off == null deletes the value.
+    public static RegVal Str(RegistryKey root, string path, string name, string on, string off)
+    {
+        return new RegVal(root, path, name, on, off, RegistryValueKind.String);
+    }
+
+    static Tweak Make(string id, string section, string name, string desc, bool restart)
+    {
+        Tweak t = new Tweak();
+        t.Id = id;
+        t.Section = section;
+        t.Name = name;
+        t.Desc = desc;
+        t.Restart = restart;
+        return t;
+    }
+
+    // Registry switch. The first value decides whether it shows as on.
+    // defOn = what to show when that value does not exist yet.
+    public static Tweak Toggle(string id, string section, string name, string desc, bool restart, bool defOn, params RegVal[] vals)
+    {
+        Tweak t = Make(id, section, name, desc, restart);
+        t.IsOn = () =>
+        {
+            object cur = Get(vals[0].Root, vals[0].Path, vals[0].Name);
+            if (cur == null) return defOn;
+            return cur.Equals(vals[0].On);
+        };
+        t.On = () => { foreach (RegVal v in vals) Apply(v, true); };
+        t.Off = () => { foreach (RegVal v in vals) Apply(v, false); };
+        return t;
+    }
+
+    // Switch with your own code.
+    public static Tweak Custom(string id, string section, string name, string desc, bool restart, Func<bool> isOn, Action on, Action off)
+    {
+        Tweak t = Make(id, section, name, desc, restart);
+        t.IsOn = isOn;
+        t.On = on;
+        t.Off = off;
+        return t;
+    }
+
+    // ---------------- services ----------------
+
+    // Switch that disables a Windows service. restoreStart: auto, delayed-auto or demand (the Windows default).
+    public static Tweak Service(string id, string section, string name, string desc, string svc, string restoreStart)
+    {
+        Tweak t = Make(id, section, name, desc, false);
+        t.IsOn = () =>
+        {
+            object v = Get(HKLM, @"SYSTEM\CurrentControlSet\Services\" + svc, "Start");
+            return v != null && v.Equals(4);
+        };
+        t.On = () =>
+        {
+            Cmd("sc.exe", "config " + svc + " start= disabled");
+            int c;
+            Sh("sc.exe", "stop " + svc, out c);
+        };
+        t.Off = () =>
+        {
+            Cmd("sc.exe", "config " + svc + " start= " + restoreStart);
+            if (restoreStart != "demand")
+            {
+                int c;
+                Sh("sc.exe", "start " + svc, out c);
+            }
+        };
+        return t;
+    }
+
+    // ---------------- power ----------------
+
+    static string FirstGuid(string text)
+    {
+        Match m = Regex.Match(text, @"[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}");
+        return m.Success ? m.Value : "";
+    }
+
+    public static string ActiveScheme()
+    {
+        int c;
+        return Sh("powercfg.exe", "/getactivescheme", out c);
+    }
+
+    static string FindScheme(string nameContains)
+    {
+        int c;
+        string o = Sh("powercfg.exe", "/list", out c);
+        foreach (string line in o.Split('\n'))
+        {
+            if (line.IndexOf(nameContains, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                string g = FirstGuid(line);
+                if (g != "") return g;
+            }
+        }
+        return "";
+    }
+
+    // Switches to a power plan, creating it first if Windows is hiding it.
+    public static void ActivateScheme(string name, string templateGuid)
+    {
+        string guid = FindScheme(name);
+        if (guid == "")
+        {
+            int c;
+            string o = Sh("powercfg.exe", "/duplicatescheme " + templateGuid, out c);
+            guid = FirstGuid(o);
+            if (guid == "") throw new Exception("This PC does not offer the " + name + " plan.");
+        }
+        Cmd("powercfg.exe", "/setactive " + guid);
+    }
+
+    static void SetAc(string sub, string setting, int value)
+    {
+        Cmd("powercfg.exe", "/setacvalueindex SCHEME_CURRENT " + sub + " " + setting + " " + value);
+        Cmd("powercfg.exe", "/setactive SCHEME_CURRENT");
+    }
+
+    // Switch for one setting of the current power plan (plugged in).
+    public static Tweak PowerSetting(string id, string section, string name, string desc, string sub, string setting, int onValue, int offValue)
+    {
+        Tweak t = Make(id, section, name, desc, false);
+        t.IsOn = () =>
+        {
+            int c;
+            string o = Sh("powercfg.exe", "/query SCHEME_CURRENT " + sub + " " + setting, out c);
+            Match m = Regex.Match(o, @"Current AC Power Setting Index:\s*0x([0-9a-fA-F]+)");
+            if (!m.Success) return false;
+            return Convert.ToInt32(m.Groups[1].Value, 16) == onValue;
+        };
+        t.On = () => SetAc(sub, setting, onValue);
+        t.Off = () => SetAc(sub, setting, offValue);
+        return t;
+    }
+
+    // ---------------- network ----------------
+
+    const string IfacePath = @"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces";
+
+    public static Tweak Nagle(string id, string section, string name, string desc)
+    {
+        Tweak t = Make(id, section, name, desc, true);
+        t.IsOn = () =>
+        {
+            using (RegistryKey k = HKLM.OpenSubKey(IfacePath))
+            {
+                if (k == null) return false;
+                foreach (string n in k.GetSubKeyNames())
+                {
+                    object v = Get(HKLM, IfacePath + @"\" + n, "TCPNoDelay");
+                    if (v != null && v.Equals(1)) return true;
+                }
+            }
+            return false;
+        };
+        t.On = () =>
+        {
+            using (RegistryKey k = HKLM.OpenSubKey(IfacePath))
+            {
+                foreach (string n in k.GetSubKeyNames())
+                {
+                    using (RegistryKey sk = HKLM.OpenSubKey(IfacePath + @"\" + n, true))
+                    {
+                        if (sk == null) continue;
+                        sk.SetValue("TcpAckFrequency", 1, RegistryValueKind.DWord);
+                        sk.SetValue("TCPNoDelay", 1, RegistryValueKind.DWord);
+                    }
+                }
+            }
+        };
+        t.Off = () =>
+        {
+            using (RegistryKey k = HKLM.OpenSubKey(IfacePath))
+            {
+                foreach (string n in k.GetSubKeyNames())
+                {
+                    using (RegistryKey sk = HKLM.OpenSubKey(IfacePath + @"\" + n, true))
+                    {
+                        if (sk == null) continue;
+                        sk.DeleteValue("TcpAckFrequency", false);
+                        sk.DeleteValue("TCPNoDelay", false);
+                    }
+                }
+            }
+        };
+        return t;
+    }
+
+    // ---------------- files ----------------
+
+    public static long DeleteContents(string dir)
+    {
+        long freed = 0;
+        if (!Directory.Exists(dir)) return 0;
+
+        EnumerationOptions opt = new EnumerationOptions();
+        opt.RecurseSubdirectories = true;
+        opt.IgnoreInaccessible = true;
+        opt.AttributesToSkip = 0;
+
+        string[] files;
+        try { files = Directory.GetFiles(dir, "*", opt); }
+        catch { return 0; }
+
+        foreach (string f in files)
+        {
+            try
+            {
+                FileInfo fi = new FileInfo(f);
+                long len = fi.Length;
+                fi.Attributes = FileAttributes.Normal;
+                fi.Delete();
+                freed += len;
+            }
+            catch { }
+        }
+
+        string[] dirs;
+        try { dirs = Directory.GetDirectories(dir); }
+        catch { return freed; }
+
+        foreach (string d in dirs)
+        {
+            try { Directory.Delete(d, true); } catch { }
+        }
+        return freed;
+    }
+
+    public static string Mb(long bytes)
+    {
+        return (bytes / 1048576.0).ToString("0.#") + " MB";
+    }
+}
+
+using System.Diagnostics;
+using System.Net.NetworkInformation;
+using Microsoft.Win32;
+using static Win;
+
+public static class Jobs
+{
+    // Tweaks the "Streaming mode" buttons switch on and off. (Order matters: arrays must exist before All is built.)
+    static readonly string[] StreamOn = new string[] { "gamemode", "dvr", "gamebar", "netthrottle", "bgapps", "power", "stickykeys", "toasts", "ducking" };
+    static readonly string[] StreamOff = new string[] { "dvr", "gamebar", "netthrottle", "bgapps", "power", "stickykeys", "toasts", "ducking" };
+
+    public static readonly List<Job> All = Build();
+
+    static Job J(string id, string section, string name, string desc, Func<string> run)
+    {
+        Job j = new Job();
+        j.Id = id;
+        j.Section = section;
+        j.Name = name;
+        j.Desc = desc;
+        j.Run = run;
+        return j;
+    }
+
+    static string Preset(string[] ids, bool turnOn)
+    {
+        int ok = 0;
+        string err = "";
+        foreach (string id in ids)
+        {
+            Tweak t = Catalog.Tweaks.Find(x => x.Id == id);
+            if (t == null) continue;
+            try
+            {
+                if (turnOn) t.On(); else t.Off();
+                ok++;
+            }
+            catch (Exception e) { err = e.Message; }
+        }
+        string text = (turnOn ? "Switched on " : "Switched off ") + ok + " of " + ids.Length + " settings.";
+        if (err != "") text += " Problem: " + err;
+        return text;
+    }
+
+    static int Boost(Func<string, bool> match, ProcessPriorityClass level)
+    {
+        int n = 0;
+        foreach (Process p in Process.GetProcesses())
+        {
+            try
+            {
+                if (match(p.ProcessName))
+                {
+                    p.PriorityClass = level;
+                    n++;
+                }
+            }
+            catch { }
+            p.Dispose();
+        }
+        return n;
+    }
+
+    static string Folder(Environment.SpecialFolder f)
+    {
+        return Environment.GetFolderPath(f);
+    }
+
+    static string Dns(string primary, string secondary)
+    {
+        int code;
+        string o = Sh("powershell.exe",
+            "-NoProfile -Command \"Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ServerAddresses ('" + primary + "','" + secondary + "') }\"",
+            out code);
+        if (code != 0) return "Could not change DNS: " + o.Trim();
+        Sh("ipconfig.exe", "/flushdns", out code);
+        return "DNS set to " + primary + " and " + secondary + ".";
+    }
+
+    static List<Job> Build()
+    {
+        List<Job> L = new List<Job>();
+
+        // =====================================================
+        // SAFETY
+        // =====================================================
+        L.Add(J("restore", "Safety", "Create a restore point",
+            "Do this first. It lets you roll Windows back if a tweak does not suit your PC.",
+            () =>
+            {
+                try
+                {
+                    using (RegistryKey k = HKLM.CreateSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore", true))
+                    {
+                        k.SetValue("SystemRestorePointCreationFrequency", 0, RegistryValueKind.DWord);
+                    }
+                }
+                catch { }
+                int code;
+                Sh("powershell.exe",
+                    "-NoProfile -ExecutionPolicy Bypass -Command \"Enable-ComputerRestore -Drive 'C:\\'; Checkpoint-Computer -Description 'TweakPanel' -RestorePointType MODIFY_SETTINGS\"",
+                    out code);
+                if (code == 0) return "Restore point created.";
+                return "Could not create a restore point. Turn on System Protection for drive C: in Windows, then try again.";
+            }));
+
+        L.Add(J("undo", "Safety", "Undo all my tweaks",
+            "Switches every tweak that is on back to Windows' own setting. Startup apps are not changed.",
+            () =>
+            {
+                int done = 0;
+                int bad = 0;
+                foreach (Tweak t in Catalog.Tweaks)
+                {
+                    if (t.Id == "gamemode") continue;
+                    bool isOn = false;
+                    try { isOn = t.IsOn(); } catch { }
+                    if (!isOn) continue;
+                    try { t.Off(); done++; } catch { bad++; }
+                }
+                string text = "Reverted " + done + " tweak(s).";
+                if (bad > 0) text += " " + bad + " could not be reverted.";
+                return text;
+            }));
+
+        // =====================================================
+        // STREAMING
+        // =====================================================
+        L.Add(J("preset-on", "Streaming", "Streaming mode: switch on",
+            "Turns on Game Mode, High performance power, no Game DVR, no Game Bar popups, no network throttling, no background apps, no Sticky Keys popups, no notification popups and no volume ducking.",
+            () => Preset(StreamOn, true)));
+
+        L.Add(J("preset-off", "Streaming", "Streaming mode: switch off",
+            "Puts those settings back to Windows defaults. Game Mode stays on because that is the Windows default.",
+            () => Preset(StreamOff, false)));
+
+        L.Add(J("boost", "Streaming", "Raise game and stream priority",
+            "Gives Fortnite high CPU priority and OBS or TikTok LIVE Studio above-normal priority. Start them first. It resets when they close.",
+            () =>
+            {
+                int game = Boost(n => n.StartsWith("FortniteClient-Win64-Shipping", StringComparison.OrdinalIgnoreCase), ProcessPriorityClass.High);
+                int stream = Boost(n =>
+                {
+                    string k = n.Replace(" ", "").ToLowerInvariant();
+                    return k.StartsWith("obs") || k.Contains("livestudio");
+                }, ProcessPriorityClass.AboveNormal);
+                if (game + stream == 0) return "Fortnite, OBS and LIVE Studio are not running. Start them, then press this again.";
+                return "Raised priority for " + game + " game and " + stream + " streaming process(es).";
+            }));
+
+        // =====================================================
+        // MEMORY
+        // =====================================================
+        L.Add(J("trimram", "Memory", "Free up RAM",
+            "Pushes idle memory out of running apps. The effect is temporary because Windows refills it as apps need it.",
+            () =>
+            {
+                ulong before = Native.Mem().ullAvailPhys;
+                foreach (Process p in Process.GetProcesses())
+                {
+                    try { Native.EmptyWorkingSet(p.Handle); } catch { }
+                    p.Dispose();
+                }
+                Thread.Sleep(600);
+                ulong after = Native.Mem().ullAvailPhys;
+                long gained = after > before ? (long)(after - before) : 0;
+                return "Freed " + Mb(gained) + ". Available RAM is now " + Mb((long)after) + ".";
+            }));
+
+        // =====================================================
+        // CLEANUP
+        // =====================================================
+        L.Add(J("temp", "Cleanup", "Clear temporary files",
+            "Deletes your temp folder and Windows\\Temp. Files that are in use are skipped.",
+            () =>
+            {
+                long freed = DeleteContents(Path.GetTempPath());
+                freed += DeleteContents(Path.Combine(Folder(Environment.SpecialFolder.Windows), "Temp"));
+                return "Cleared " + Mb(freed) + ".";
+            }));
+
+        L.Add(J("recycle", "Cleanup", "Empty the Recycle Bin",
+            "Permanently deletes everything in the Recycle Bin.",
+            () =>
+            {
+                Native.SHEmptyRecycleBin(IntPtr.Zero, null, 7);
+                return "Recycle Bin emptied.";
+            }));
+
+        L.Add(J("browsers", "Cleanup", "Clear browser caches",
+            "Clears cached files for Chrome, Edge and Brave (main profile). You stay signed in.",
+            () =>
+            {
+                string local = Folder(Environment.SpecialFolder.LocalApplicationData);
+                string[] profiles = new string[]
+                {
+                    Path.Combine(local, "Google", "Chrome", "User Data", "Default"),
+                    Path.Combine(local, "Microsoft", "Edge", "User Data", "Default"),
+                    Path.Combine(local, "BraveSoftware", "Brave-Browser", "User Data", "Default")
+                };
+                string[] parts = new string[] { "Cache", "Code Cache", "GPUCache" };
+                long freed = 0;
+                foreach (string profile in profiles)
+                    foreach (string part in parts)
+                        freed += DeleteContents(Path.Combine(profile, part));
+                return "Cleared " + Mb(freed) + ". Close your browser first for the best result.";
+            }));
+
+        L.Add(J("shader", "Cleanup", "Clear the DirectX shader cache",
+            "Fixes some game stutter and graphics glitches. Games rebuild it, so expect a little stutter the first time you play.",
+            () =>
+            {
+                long freed = DeleteContents(Path.Combine(Folder(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"));
+                return "Cleared " + Mb(freed) + ".";
+            }));
+
+        L.Add(J("fnlogs", "Cleanup", "Clear Fortnite logs and crash reports",
+            "Deletes Fortnite's log and crash folders. Your settings and shader cache are left alone.",
+            () =>
+            {
+                string saved = Path.Combine(Folder(Environment.SpecialFolder.LocalApplicationData), "FortniteGame", "Saved");
+                long freed = DeleteContents(Path.Combine(saved, "Logs")) + DeleteContents(Path.Combine(saved, "Crashes"));
+                return "Cleared " + Mb(freed) + " of Fortnite logs.";
+            }));
+
+        L.Add(J("wer", "Cleanup", "Clear Windows error reports",
+            "Deletes stored crash and error reports.",
+            () =>
+            {
+                long freed = DeleteContents(Path.Combine(Folder(Environment.SpecialFolder.CommonApplicationData), "Microsoft", "Windows", "WER"));
+                freed += DeleteContents(Path.Combine(Folder(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER"));
+                return "Cleared " + Mb(freed) + ".";
+            }));
+
+        L.Add(J("thumbs", "Cleanup", "Clear thumbnail cache",
+            "Deletes saved picture previews. Windows rebuilds them as you browse folders.",
+            () =>
+            {
+                string dir = Path.Combine(Folder(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "Explorer");
+                long freed = 0;
+                if (Directory.Exists(dir))
+                {
+                    foreach (string f in Directory.GetFiles(dir, "*cache_*.db"))
+                    {
+                        try
+                        {
+                            FileInfo fi = new FileInfo(f);
+                            long len = fi.Length;
+                            fi.Delete();
+                            freed += len;
+                        }
+                        catch { }
+                    }
+                }
+                return "Cleared " + Mb(freed) + ". Some files stay while Explorer is using them.";
+            }));
+
+        L.Add(J("wucache", "Cleanup", "Clear Windows Update download cache",
+            "Deletes old update downloads that are already installed. Windows re-downloads anything it still needs.",
+            () =>
+            {
+                int c;
+                Sh("net.exe", "stop wuauserv", out c);
+                Sh("net.exe", "stop bits", out c);
+                long freed = DeleteContents(Path.Combine(Folder(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download"));
+                Sh("net.exe", "start bits", out c);
+                Sh("net.exe", "start wuauserv", out c);
+                return "Cleared " + Mb(freed) + ".";
+            }));
+
+        L.Add(J("componentclean", "Cleanup", "Clean up old Windows files",
+            "Removes superseded Windows update files (DISM component cleanup). Opens a window and can take several minutes.",
+            () => Window("Component cleanup", "dism.exe /Online /Cleanup-Image /StartComponentCleanup")));
+
+        // =====================================================
+        // NETWORK
+        // =====================================================
+        L.Add(J("ping", "Network", "Check my ping",
+            "Sends four test packets to Cloudflare (1.1.1.1) and shows the average delay.",
+            () =>
+            {
+                int ok = 0;
+                long total = 0;
+                using (Ping ping = new Ping())
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        try
+                        {
+                            PingReply r = ping.Send("1.1.1.1", 1500);
+                            if (r.Status == IPStatus.Success)
+                            {
+                                ok++;
+                                total += r.RoundtripTime;
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                if (ok == 0) return "No reply. Check your internet connection.";
+                return "Average ping " + (total / ok) + " ms. " + (4 - ok) + " of 4 lost.";
+            }));
+
+        L.Add(J("dns-flush", "Network", "Flush DNS cache",
+            "Clears stored website addresses. Fixes odd connection problems.",
+            () =>
+            {
+                int code;
+                Sh("ipconfig.exe", "/flushdns", out code);
+                return code == 0 ? "DNS cache flushed." : "Could not flush DNS.";
+            }));
+
+        L.Add(J("dns-cf", "Network", "Use Cloudflare DNS (1.1.1.1)",
+            "Switches your connected adapters to Cloudflare's fast public DNS.",
+            () => Dns("1.1.1.1", "1.0.0.1")));
+
+        L.Add(J("dns-google", "Network", "Use Google DNS (8.8.8.8)",
+            "Switches your connected adapters to Google's public DNS.",
+            () => Dns("8.8.8.8", "8.8.4.4")));
+
+        L.Add(J("dns-auto", "Network", "Set DNS back to automatic",
+            "Goes back to the DNS your router or internet provider gives you.",
+            () =>
+            {
+                int code;
+                string o = Sh("powershell.exe",
+                    "-NoProfile -Command \"Get-NetAdapter | Where-Object { $_.Status -eq 'Up' } | ForEach-Object { Set-DnsClientServerAddress -InterfaceIndex $_.ifIndex -ResetServerAddresses }\"",
+                    out code);
+                return code == 0 ? "DNS set back to automatic." : "Could not change DNS: " + o.Trim();
+            }));
+
+        L.Add(J("winsock", "Network", "Reset Winsock",
+            "Repairs broken network settings. Restart your PC afterwards.",
+            () =>
+            {
+                int code;
+                string o = Sh("netsh.exe", "winsock reset", out code);
+                return code == 0 ? "Winsock reset. Restart your PC to finish." : "Failed: " + o.Trim();
+            }));
+
+        L.Add(J("iprest", "Network", "Reset TCP/IP",
+            "Rebuilds the network stack. Use it if the internet keeps dropping. Restart your PC afterwards.",
+            () =>
+            {
+                int code;
+                string o = Sh("netsh.exe", "int ip reset", out code);
+                return code == 0 ? "TCP/IP reset. Restart your PC to finish." : "Failed: " + o.Trim();
+            }));
+
+        // =====================================================
+        // REPAIR
+        // =====================================================
+        L.Add(J("explorer", "Repair", "Restart Windows Explorer",
+            "Restarts the taskbar and desktop. Use it to apply visual tweaks without signing out.",
+            () =>
+            {
+                int code;
+                Sh("taskkill.exe", "/f /im explorer.exe", out code);
+                return "Explorer restarted. Your taskbar will be back in a moment.";
+            }));
+
+        L.Add(J("sfc", "Repair", "Scan and repair Windows files",
+            "Runs System File Checker. Opens a window and takes about 10 minutes.",
+            () => Window("System File Checker", "sfc /scannow")));
+
+        L.Add(J("dism", "Repair", "Repair the Windows image",
+            "Runs DISM RestoreHealth. Needs internet. Opens a window and can take 20 minutes.",
+            () => Window("DISM repair", "dism.exe /Online /Cleanup-Image /RestoreHealth")));
+
+        L.Add(J("chkdsk", "Repair", "Check drive C: for errors",
+            "Scans the drive without taking it offline. Opens a window.",
+            () => Window("Check disk", "chkdsk C: /scan")));
+
+        L.Add(J("trim", "Repair", "Optimise drives (TRIM)",
+            "Runs Windows' own drive optimiser. Keeps SSDs fast and defragments hard drives. Opens a window.",
+            () => Window("Optimise drives", "defrag.exe C: /O /U /V")));
+
+        return L;
+    }
+}
+
+public class Profile
+{
+    public string Id = "";
+    public string Name = "";
+    public string Tagline = "";
+    public string[] Ids = new string[0];
+}
+
+public static class Profiles
+{
+    // Safe, easy to live with.
+    static readonly string[] Essential = new string[]
+    {
+        "gamemode", "dvr", "gamebar", "windowedopt", "mouse", "stickykeys", "netthrottle",
+        "power", "transparency", "menudelay", "startdelay", "bgapps", "fastshutdown",
+        "noreboot", "dopt", "adid", "tailored", "ads", "feedback", "apptrack"
+    };
+
+    // Essential plus lower delay and steadier frametimes.
+    static readonly string[] CompetitiveExtra = new string[]
+    {
+        "fse", "gamepriority", "foreground", "kbdelay", "usbsuspend", "pcie", "coreparking", "cpumin",
+        "nagle", "animations", "taskbaranim", "aeropeek", "shake", "visualfx", "ducking", "toasts",
+        "nodrivers", "maintenance", "telemetry", "bing", "cortana", "copilot", "activity", "werport",
+        "edgebg", "svc-diagtrack", "svc-wap"
+    };
+
+    // Competitive plus the more aggressive changes.
+    static readonly string[] MaxExtra = new string[]
+    {
+        "ultimate", "hags", "diskidle", "faststartup", "hibernate", "lastaccess", "pagingexec",
+        "nolockscreen", "location", "widgets", "svc-sysmain", "svc-maps", "svc-geo", "svc-retail",
+        "svc-insider", "svc-wer", "svc-phone"
+    };
+
+    public static readonly List<Profile> All = Build();
+
+    static List<Profile> Build()
+    {
+        string[] competitive = Essential.Concat(CompetitiveExtra).ToArray();
+        // Max uses the Ultimate Performance plan instead of High performance.
+        string[] max = competitive.Where(x => x != "power").Concat(MaxExtra).Distinct().ToArray();
+
+        List<Profile> list = new List<Profile>();
+
+        Profile a = new Profile();
+        a.Id = "essential";
+        a.Name = "Essential Boost";
+        a.Tagline = "High-value, low-risk changes for a cleaner, faster gaming setup.";
+        a.Ids = Essential;
+        list.Add(a);
+
+        Profile b = new Profile();
+        b.Id = "competitive";
+        b.Name = "Competitive";
+        b.Tagline = "Focused changes for lower input delay and steadier frametimes.";
+        b.Ids = competitive;
+        list.Add(b);
+
+        Profile c = new Profile();
+        c.Id = "max";
+        c.Name = "Max Performance";
+        c.Tagline = "Everything above plus system-wide changes. Highest power use and heat.";
+        c.Ids = max;
+        list.Add(c);
+
+        return list;
+    }
+
+    public static string Apply(string id, bool turnOn)
+    {
+        Profile p = All.Find(x => x.Id == id);
+        if (p == null) throw new ArgumentException("Unknown profile");
+
+        string prefix = "";
+        if (turnOn)
+        {
+            Job restore = Jobs.All.Find(j => j.Id == "restore");
+            prefix = restore.Run() + " ";
+        }
+
+        bool lowRam = Native.Mem().ullTotalPhys < 15UL * 1073741824UL;
+        int changed = 0;
+        int already = 0;
+        int failed = 0;
+        string firstError = "";
+
+        foreach (string tid in p.Ids)
+        {
+            Tweak t = Catalog.Tweaks.Find(x => x.Id == tid);
+            if (t == null) continue;
+            if (turnOn && tid == "pagingexec" && lowRam) continue;
+            if (!turnOn && tid == "gamemode") continue;
+
+            try
+            {
+                bool isOn = t.IsOn();
+                if (turnOn)
+                {
+                    if (isOn) { already++; continue; }
+                    t.On();
+                }
+                else
+                {
+                    if (!isOn) continue;
+                    t.Off();
+                }
+                changed++;
+            }
+            catch (Exception e)
+            {
+                failed++;
+                if (firstError == "") firstError = t.Name + ": " + e.Message;
+            }
+        }
+
+        string text;
+        if (turnOn)
+            text = prefix + p.Name + ": " + changed + " switched on, " + already + " already on.";
+        else
+            text = p.Name + ": " + changed + " switched back to Windows defaults.";
+        if (failed > 0) text += " " + failed + " failed (" + firstError.Trim() + ").";
+        return text;
+    }
+}
+
+using System.Diagnostics;
+using System.Net;
+using System.Reflection;
+using System.Security.Principal;
+using System.Text;
+using System.Text.Json;
+
+string token = Guid.NewGuid().ToString("N");
+JsonSerializerOptions jsonOpt = new JsonSerializerOptions();
+jsonOpt.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+
+// Load the web page that is built into the exe.
+string html = "";
+{
+    Assembly asm = Assembly.GetExecutingAssembly();
+    string resName = "";
+    foreach (string n in asm.GetManifestResourceNames())
+    {
+        if (n.EndsWith("index.html")) resName = n;
+    }
+    using (Stream s = asm.GetManifestResourceStream(resName))
+    using (StreamReader r = new StreamReader(s, Encoding.UTF8))
+    {
+        html = r.ReadToEnd().Replace("__TOKEN__", token);
+    }
+}
+
+using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+{
+    if (!new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
+        Console.WriteLine("Warning: not running as administrator. Some tweaks will fail.");
+}
+
+HttpListener listener = null;
+int port = 5173;
+for (; port < 5190; port++)
+{
+    try
+    {
+        HttpListener l = new HttpListener();
+        l.Prefixes.Add("http://127.0.0.1:" + port + "/");
+        l.Start();
+        listener = l;
+        break;
+    }
+    catch { }
+}
+if (listener == null)
+{
+    Console.WriteLine("Could not start: no free port between 5173 and 5189.");
+    return;
+}
+
+string url = "http://127.0.0.1:" + port + "/";
+Console.WriteLine("Tweak Panel is running at " + url);
+Console.WriteLine("Leave this window open. Close it, or press Quit in the panel, to stop.");
+
+// explorer.exe opens the link in your normal browser, not in an admin one.
+try { Process.Start(new ProcessStartInfo("explorer.exe", url)); }
+catch { Console.WriteLine("Open this address in your browser: " + url); }
+
+while (true)
+{
+    HttpListenerContext ctx = await listener.GetContextAsync();
+    _ = Task.Run(() => Handle(ctx));
+}
+
+void Send(HttpListenerResponse rs, string type, string body)
+{
+    byte[] bytes = Encoding.UTF8.GetBytes(body);
+    rs.ContentType = type + "; charset=utf-8";
+    rs.Headers["Cache-Control"] = "no-store";
+    rs.ContentLength64 = bytes.Length;
+    rs.OutputStream.Write(bytes, 0, bytes.Length);
+}
+
+string Json(object value)
+{
+    return JsonSerializer.Serialize(value, value.GetType(), jsonOpt);
+}
+
+void Handle(HttpListenerContext c)
+{
+    HttpListenerRequest rq = c.Request;
+    HttpListenerResponse rs = c.Response;
+    try
+    {
+        // Only our own page (with our secret token) may call the API.
+        string host = rq.UserHostName ?? "";
+        if (!host.StartsWith("127.0.0.1") && !host.StartsWith("localhost"))
+        {
+            rs.StatusCode = 403;
+            return;
+        }
+
+        string path = rq.Url.AbsolutePath;
+        if (path == "/")
+        {
+            Send(rs, "text/html", html);
+            return;
+        }
+        if (rq.Headers["X-Token"] != token)
+        {
+            rs.StatusCode = 401;
+            return;
+        }
+
+        var q = rq.QueryString;
+        bool post = rq.HttpMethod == "POST";
+
+        if (path == "/api/state")
+        {
+            Send(rs, "application/json", Json(Catalog.State()));
+        }
+        else if (path == "/api/stats")
+        {
+            Send(rs, "application/json", Json(Stats.Read()));
+        }
+        else if (path == "/api/startup")
+        {
+            Send(rs, "application/json", Json(Startup.GetAll()));
+        }
+        else if (path == "/api/startup/toggle" && post)
+        {
+            bool now = Startup.Set(q["scope"] ?? "", q["name"] ?? "", q["on"] == "1");
+            Send(rs, "application/json", Json(new { ok = true, on = now }));
+        }
+        else if (path == "/api/toggle" && post)
+        {
+            Tweak t = Catalog.Tweaks.Find(x => x.Id == q["id"]);
+            if (t == null) { rs.StatusCode = 404; return; }
+            if (q["on"] == "1") t.On(); else t.Off();
+            Send(rs, "application/json", Json(new { ok = true, on = t.IsOn(), restart = t.Restart }));
+        }
+        else if (path == "/api/run" && post)
+        {
+            Job j = Jobs.All.Find(x => x.Id == q["id"]);
+            if (j == null) { rs.StatusCode = 404; return; }
+            Send(rs, "application/json", Json(new { ok = true, message = j.Run() }));
+        }
+        else if (path == "/api/profile" && post)
+        {
+            string msg = Profiles.Apply(q["id"] ?? "", q["on"] == "1");
+            Send(rs, "application/json", Json(new { ok = true, message = msg }));
+        }
+        else if (path == "/api/quit" && post)
+        {
+            Send(rs, "application/json", Json(new { ok = true }));
+            Task.Run(() => { Thread.Sleep(300); Environment.Exit(0); });
+        }
+        else
+        {
+            rs.StatusCode = 404;
+        }
+    }
+    catch (Exception e)
+    {
+        try
+        {
+            rs.StatusCode = 500;
+            Send(rs, "application/json", Json(new { ok = false, message = e.Message }));
+        }
+        catch { }
+    }
+    finally
+    {
+        rs.Close();
+    }
+}
+
+TWEAK PANEL
+
+Build it on GitHub (no installs):
+1. Unzip this, open the TweakPanel folder.
+2. In your GitHub repo click Add file > Upload files.
+3. Select everything inside the folder (Ctrl+A) and drag it in. Same-name files get replaced.
+4. Click Commit changes, then open the Actions tab and wait for the green tick (about 2 minutes).
+5. Open the finished build, scroll to Artifacts, download TweakPanel, unzip, run TweakPanel.exe.
+
+Run: double-click TweakPanel.exe, click Yes on the admin prompt. The panel opens in your browser.
+Close the black window (or press Quit in the panel) to stop it.
+
+using Microsoft.Win32;
+
+public static class Startup
+{
+    const string Run = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    const string Approved = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+
+    static RegistryKey Root(string scope)
+    {
+        if (scope == "machine") return Registry.LocalMachine;
+        if (scope == "user") return Registry.CurrentUser;
+        throw new ArgumentException("Unknown scope");
+    }
+
+    // Lists the programs that start with Windows. Uses the same switch as Task Manager,
+    // so turning one off keeps it in the list and it can be turned back on.
+    public static List<object> GetAll()
+    {
+        List<object> result = new List<object>();
+        foreach (string scope in new string[] { "user", "machine" })
+        {
+            using (RegistryKey run = Root(scope).OpenSubKey(Run))
+            {
+                if (run == null) continue;
+                using (RegistryKey ap = Root(scope).OpenSubKey(Approved))
+                {
+                    foreach (string name in run.GetValueNames())
+                    {
+                        if (name.Length == 0) continue;
+                        bool enabled = true;
+                        if (ap != null)
+                        {
+                            byte[] b = ap.GetValue(name) as byte[];
+                            if (b != null && b.Length > 0 && (b[0] & 1) == 1) enabled = false;
+                        }
+                        object cmd = run.GetValue(name);
+                        string command = cmd == null ? "" : cmd.ToString();
+                        result.Add(new { scope = scope, name = name, command = command, enabled = enabled });
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public static bool Set(string scope, string name, bool enabled)
+    {
+        using (RegistryKey run = Root(scope).OpenSubKey(Run))
+        {
+            if (run == null || run.GetValue(name) == null) throw new ArgumentException("Unknown startup entry");
+        }
+        using (RegistryKey ap = Root(scope).CreateSubKey(Approved, true))
+        {
+            byte[] b = new byte[12];
+            b[0] = (byte)(enabled ? 2 : 3);
+            if (!enabled) BitConverter.GetBytes(DateTime.UtcNow.ToFileTimeUtc()).CopyTo(b, 4);
+            ap.SetValue(name, b, RegistryValueKind.Binary);
+        }
+        return enabled;
+    }
+}
+
+public static class Stats
+{
+    static long lastIdle = 0;
+    static long lastKernel = 0;
+    static long lastUser = 0;
+    static readonly object gate = new object();
+
+    public static object Read()
+    {
+        long idle, kernel, user;
+        Native.GetSystemTimes(out idle, out kernel, out user);
+
+        double cpu = 0;
+        lock (gate)
+        {
+            long total = (kernel - lastKernel) + (user - lastUser);
+            long idleDiff = idle - lastIdle;
+            if (lastKernel != 0 && total > 0) cpu = 100.0 * (total - idleDiff) / total;
+            lastIdle = idle;
+            lastKernel = kernel;
+            lastUser = user;
+        }
+        if (cpu < 0) cpu = 0;
+        if (cpu > 100) cpu = 100;
+
+        Native.MEMSTAT m = Native.Mem();
+        double usedGb = (m.ullTotalPhys - m.ullAvailPhys) / 1073741824.0;
+        double totalGb = m.ullTotalPhys / 1073741824.0;
+
+        double freeDisk = 0;
+        double totalDisk = 1;
+        try
+        {
+            DriveInfo drive = new DriveInfo(Path.GetPathRoot(Environment.SystemDirectory));
+            freeDisk = drive.AvailableFreeSpace / 1073741824.0;
+            totalDisk = drive.TotalSize / 1073741824.0;
+        }
+        catch { }
+
+        return new
+        {
+            cpu = Math.Round(cpu),
+            ramPct = (int)m.dwMemoryLoad,
+            ramUsedGb = Math.Round(usedGb, 1),
+            ramTotalGb = Math.Round(totalGb, 1),
+            diskFreeGb = Math.Round(freeDisk),
+            diskTotalGb = Math.Round(totalDisk)
+        };
+    }
+}
+
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TweakPanel</RootNamespace>
+    <AssemblyName>TweakPanel</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\index.html" />
+  </ItemGroup>
+
+</Project>
+
+name: Build Tweak Panel
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publish single-file exe (no .NET install needed to run it)
+        run: dotnet publish TweakPanel.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TweakPanel
+          path: dist/TweakPanel.exe
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tweak Panel</title>
+<style>
+  :root {
+    --bg: #171826; --side: #1d1f2e; --panel: #272a3a; --panel2: #31354a; --line: #3b3f55;
+    --text: #eceefb; --muted: #a0a5c6; --a1: #6a4bff; --a2: #9b7bff; --ok: #5cd6a0; --warn: #ffb454;
+    font-family: Bahnschrift, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; color: var(--text);
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(122,86,255,.35), transparent 60%),
+      radial-gradient(700px 500px at 0% 110%, rgba(106,75,255,.22), transparent 60%),
+      var(--bg);
+  }
+
+  /* ---------- sidebar ---------- */
+  .side { width: 230px; flex: none; height: 100vh; padding: 18px 14px; display: flex; flex-direction: column; background: rgba(29,31,46,.92); border-right: 1px solid var(--line); }
+  .brand { display: flex; gap: 10px; align-items: center; margin-bottom: 22px; padding: 0 6px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: linear-gradient(135deg, var(--a1), var(--a2)); }
+  .brand b { display: block; font-size: 15px; letter-spacing: 1px; line-height: 1.1; }
+  .brand span { display: block; font-size: 15px; letter-spacing: 1px; color: var(--a2); font-weight: 700; line-height: 1.1; }
+  .nav button { display: flex; gap: 10px; align-items: center; width: 100%; margin-bottom: 4px; padding: 10px 12px; border: 0; border-radius: 8px; background: none; color: var(--muted); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+  .nav button:hover { background: rgba(255,255,255,.05); color: var(--text); }
+  .nav button.on { background: rgba(106,75,255,.22); color: #fff; box-shadow: inset 3px 0 0 var(--a2); }
+  .nav svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .status { margin: 18px 6px 8px; font-size: 12px; color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--ok); }
+  .foot { margin-top: auto; display: grid; gap: 6px; }
+  .foot button { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+  .foot button:hover { color: var(--text); border-color: var(--a2); }
+  .foot button:disabled { opacity: .5; cursor: wait; }
+
+  /* ---------- main ---------- */
+  .main { flex: 1; min-width: 0; height: 100vh; overflow-y: auto; padding: 22px 26px 40px; }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; padding: 14px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--a2); border-radius: 10px; }
+  .head h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  .head p { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+
+  .btn { padding: 9px 16px; border: 0; border-radius: 8px; background: linear-gradient(90deg, var(--a1), var(--a2)); color: #fff; font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  .btn:hover { filter: brightness(1.1); }
+  .btn:disabled { opacity: .5; cursor: wait; }
+  .btn.alt { background: var(--panel2); border: 1px solid var(--line); }
+  .btn.alt:hover { border-color: var(--a2); filter: none; }
+  .ghost { padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+  .ghost:hover { color: var(--text); border-color: var(--a2); }
+  .ghost:disabled { opacity: .5; cursor: wait; }
+  button:focus-visible, input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  .pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .pills button { padding: 6px 16px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+  .pills button.on { background: linear-gradient(90deg, var(--a1), var(--a2)); border-color: transparent; color: #fff; }
+
+  .card { padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .pcard { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+  .tile { width: 56px; height: 56px; display: grid; place-items: center; border-radius: 14px; background: var(--panel2); border: 1px solid var(--line); color: var(--a2); font-size: 11px; letter-spacing: 1px; }
+  .pcard h3 { margin: 4px 0 0; font-size: 17px; }
+  .pcard p { margin: 0; min-height: 36px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .count { font-size: 12px; letter-spacing: .5px; color: var(--a2); }
+  .pcard .btn { width: 100%; margin-top: 4px; }
+  .small { font-size: 12px; color: var(--muted); }
+
+  .bar { width: 100%; height: 8px; overflow: hidden; border-radius: 4px; background: #12131e; }
+  .bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--a1), var(--a2)); transition: width .6s ease; }
+  .bar > i.hot { background: var(--warn); }
+
+  .gauges { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .gauge-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; font-size: 14px; color: var(--muted); }
+  .gauge-top b { font-size: 24px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+  h2.sec { margin: 22px 0 8px; font-size: 15px; font-weight: 600; }
+  h2.sec:first-child { margin-top: 0; }
+
+  .tools { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tools input { flex: 1; min-width: 200px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); font: inherit; font-size: 14px; }
+
+  .rows { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .row { display: flex; gap: 16px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .txt { flex: 1; min-width: 0; }
+  .name { font-size: 15px; font-weight: 600; }
+  .desc { margin-top: 2px; font-size: 13px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
+  .tag { margin-top: 6px; font-size: 12px; color: var(--warn); }
+
+  .switch { position: relative; flex: none; width: 46px; height: 26px; }
+  .switch input { position: absolute; inset: 0; z-index: 1; margin: 0; opacity: 0; cursor: pointer; }
+  .switch .track { position: absolute; inset: 0; border-radius: 13px; background: #12131e; border: 1px solid var(--line); transition: background .2s; }
+  .switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+  .switch input:checked + .track { background: var(--a1); border-color: var(--a2); }
+  .switch input:checked + .track::after { transform: translateX(20px); background: #fff; }
+  .switch input:disabled { cursor: wait; }
+
+  #toast { position: fixed; left: 50%; bottom: 24px; max-width: 90vw; padding: 10px 16px; transform: translate(-50%, 20px); background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 10; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #toast.err { border-left-color: var(--warn); }
+
+  @media (max-width: 820px) {
+    body { flex-direction: column; }
+    .side { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px; }
+    .brand { margin: 0 8px 0 0; }
+    .nav { display: flex; gap: 4px; flex-wrap: wrap; }
+    .nav button { width: auto; margin: 0; }
+    .status { display: none; }
+    .foot { margin: 0 0 0 auto; grid-auto-flow: column; }
+    .main { height: auto; padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<aside class="side">
+  <div class="brand">
+    <div class="logo">TP</div>
+    <div><b>TWEAK</b><span>PANEL</span></div>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-page="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Home</button>
+    <button data-page="boost"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Boost</button>
+    <button data-page="fine"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Fine Tune</button>
+    <button data-page="tools"><svg viewBox="0 0 24 24"><path d="M14 7a4 4 0 0 0 5 5l-9 9a2.5 2.5 0 0 1-3.5-3.5l9-9a4 4 0 0 0-1.5-1.5z"/></svg>Tools</button>
+  </nav>
+  <div class="status"><span class="dot"></span>System ready</div>
+  <div class="foot">
+    <button id="fRestore">Create restore point</button>
+    <button id="fUndo">Undo all tweaks</button>
+    <button id="fQuit">Quit</button>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="head">
+    <div><h1 id="title">Home</h1><p id="subtitle"></p></div>
+    <button class="btn" id="scanBtn">Scan System</button>
+  </div>
+
+  <!-- HOME -->
+  <div class="page" id="p-home">
+    <div class="gauges">
+      <div class="card"><div class="gauge-top"><span>CPU</span><b id="cpu">-</b></div><div class="bar"><i id="cpuBar"></i></div><div class="small" id="cpuName" style="margin-top:6px"></div></div>
+      <div class="card"><div class="gauge-top"><span>Memory</span><b id="ram">-</b></div><div class="bar"><i id="ramBar"></i></div><div class="small" id="ramD" style="margin-top:6px"></div></div>
+      <div class="card"><div class="gauge-top"><span>System drive free</span><b id="disk">-</b></div><div class="bar"><i id="diskBar"></i></div><div class="small" id="diskD" style="margin-top:6px"></div></div>
+    </div>
+    <h2 class="sec">Quick actions</h2>
+    <div class="quick" id="quick"></div>
+    <p class="small" id="osLine" style="margin-top:18px"></p>
+  </div>
+
+  <!-- BOOST -->
+  <div class="page" id="p-boost" hidden>
+    <div class="pills">
+      <button id="tabProfiles" class="on">Profiles</button>
+      <button id="tabScan">Smart Scan</button>
+    </div>
+    <div id="boostProfiles">
+      <div class="cards" id="cards"></div>
+      <p class="small" style="margin-top:14px">Applying a profile creates a restore point first. "Undo" puts that profile's tweaks back to Windows defaults. Some tweaks need a restart or sign-out.</p>
+    </div>
+    <div id="boostScan" hidden></div>
+  </div>
+
+  <!-- FINE TUNE -->
+  <div class="page" id="p-fine" hidden>
+    <div class="tools">
+      <input id="q" type="search" placeholder="Search tweaks...">
+    </div>
+    <div class="pills" id="chips"></div>
+    <div id="fineList"></div>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="page" id="p-tools" hidden>
+    <div id="toolList"></div>
+  </div>
+</main>
+
+<div id="toast" role="status"></div>
+
+<script>
+const TOKEN = "__TOKEN__";
+const $ = id => document.getElementById(id);
+
+const PAGES = {
+  home:  ["Home", "Your PC at a glance, plus one-click actions."],
+  boost: ["Performance Boost", "Pick a profile, or run a scan to see what your PC is missing."],
+  fine:  ["Fine Tune", "Every tweak, one switch at a time."],
+  tools: ["Tools", "Cleanup, network, repair and startup apps."]
+};
+const FINE_ORDER = ["Gaming", "Streaming", "Power", "Network", "Visuals", "Privacy", "Windows Update", "System", "Services"];
+const TOOL_ORDER = ["Safety", "Streaming", "Memory", "Cleanup", "Network", "Repair"];
+const RELOAD_JOBS = ["undo", "preset-on", "preset-off"];
+const QUICK = [
+  ["restore", "Create restore point"], ["preset-on", "Streaming mode: on"], ["preset-off", "Streaming mode: off"],
+  ["boost", "Raise game and stream priority"], ["trimram", "Free up RAM"], ["temp", "Clear temporary files"], ["ping", "Check my ping"]
+];
+const TAGS = { essential: "BOOST", competitive: "FPS", max: "MAX" };
+
+let STATE = null;
+let STARTUP = [];
+let chip = "All";
+
+async function api(path, method) {
+  const r = await fetch(path, { method: method || "GET", headers: { "X-Token": TOKEN } });
+  let data = null;
+  try { data = await r.json(); } catch (e) { }
+  if (!r.ok) throw new Error((data && data.message) || ("Request failed (" + r.status + ")"));
+  return data;
+}
+
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ""; }, 6000);
+}
+
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in (props || {})) {
+    if (k === "class") e.className = props[k]; else e[k] = props[k];
+  }
+  kids.flat().forEach(c => { if (c) e.append(c); });
+  return e;
+}
+
+/* ---------- navigation ---------- */
+function go(name) {
+  document.querySelectorAll(".page").forEach(p => { p.hidden = p.id !== "p-" + name; });
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.page === name));
+  $("title").textContent = PAGES[name][0];
+  $("subtitle").textContent = PAGES[name][1];
+}
+document.querySelectorAll("#nav button").forEach(b => { b.onclick = () => go(b.dataset.page); });
+
+function boostTab(which) {
+  $("tabProfiles").classList.toggle("on", which === "profiles");
+  $("tabScan").classList.toggle("on", which === "scan");
+  $("boostProfiles").hidden = which !== "profiles";
+  $("boostScan").hidden = which !== "scan";
+}
+$("tabProfiles").onclick = () => boostTab("profiles");
+$("tabScan").onclick = () => boostTab("scan");
+
+/* ---------- reusable rows ---------- */
+function makeSwitch(checked, label, change) {
+  const input = el("input", { type: "checkbox", checked: checked });
+  input.setAttribute("aria-label", label);
+  input.onchange = async () => {
+    input.disabled = true;
+    const want = input.checked;
+    try { input.checked = await change(want); }
+    catch (e) { input.checked = !want; toast(e.message, true); }
+    input.disabled = false;
+  };
+  return el("label", { class: "switch" }, input, el("span", { class: "track" }));
+}
+
+function makeRow(name, desc, control, tag) {
+  const row = el("div", { class: "row" },
+    el("div", { class: "txt" },
+      el("div", { class: "name", textContent: name }),
+      el("div", { class: "desc", textContent: desc }),
+      tag ? el("div", { class: "tag", textContent: tag }) : null),
+    control);
+  row.dataset.search = (name + " " + desc).toLowerCase();
+  return row;
+}
+
+function tweakRow(t) {
+  const control = makeSwitch(t.enabled, t.name, async want => {
+    const r = await api("/api/toggle?id=" + t.id + "&on=" + (want ? 1 : 0), "POST");
+    t.enabled = r.on;
+    toast((r.on ? "On: " : "Off: ") + t.name + (r.restart ? " (needs a restart or sign-out)" : ""));
+    renderProfiles();
+    renderScan();
+    return r.on;
+  });
+  return makeRow(t.name, t.desc, control, t.restart ? "Takes effect after a restart or sign-out" : "");
+}
+
+async function runJob(id, btn) {
+  const old = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Working..."; }
+  try {
+    const r = await api("/api/run?id=" + id, "POST");
+    toast(r.message);
+    if (RELOAD_JOBS.includes(id)) await load();
+  } catch (e) { toast(e.message, true); }
+  if (btn) { btn.disabled = false; btn.textContent = old; }
+}
+
+function jobRow(j) {
+  const btn = el("button", { class: "ghost", textContent: "Run" });
+  btn.onclick = () => runJob(j.id, btn);
+  return makeRow(j.name, j.desc, btn, "");
+}
+
+function startupRow(s) {
+  const control = makeSwitch(s.enabled, "Start " + s.name + " with Windows", async want => {
+    const r = await api("/api/startup/toggle?scope=" + s.scope + "&name=" + encodeURIComponent(s.name) + "&on=" + (want ? 1 : 0), "POST");
+    toast((r.on ? "Starts with Windows: " : "Will not start with Windows: ") + s.name);
+    return r.on;
+  });
+  return makeRow(s.name, s.command, control, s.scope === "machine" ? "Applies to all users" : "");
+}
+
+function section(title, rows) {
+  return el("div", {}, el("h2", { class: "sec", textContent: title }), el("div", { class: "rows" }, rows));
+}
+
+/* ---------- boost page ---------- */
+function renderProfiles() {
+  if (!STATE) return;
+  $("cards").replaceChildren(...STATE.profiles.map(p => {
+    const apply = el("button", { class: "btn", textContent: "Apply profile" });
+    apply.onclick = () => runProfile(p, true, apply);
+    const undo = el("button", { class: "ghost", textContent: "Undo" });
+    undo.onclick = () => runProfile(p, false, undo);
+    const pct = Math.round((p.active / p.total) * 100);
+    return el("div", { class: "card pcard" },
+      el("div", { class: "tile", textContent: TAGS[p.id] || "" }),
+      el("h3", { textContent: p.name }),
+      el("p", { textContent: p.tagline }),
+      el("div", { class: "count", textContent: p.total + " TWEAKS" }),
+      el("div", { class: "bar" }, el("i", { style: "width:" + pct + "%" })),
+      el("div", { class: "small", textContent: p.active + " of " + p.total + " active" }),
+      apply, undo);
+  }));
+}
+
+async function runProfile(p, on, btn) {
+  const q = on
+    ? 'Apply "' + p.name + '"?\n\nA restore point is created first, then up to ' + p.total + ' tweaks are switched on. This can take a minute.'
+    : 'Undo "' + p.name + '"?\n\nIts tweaks are switched back to Windows defaults.';
+  if (!confirm(q)) return;
+  document.querySelectorAll(".pcard button").forEach(b => { b.disabled = true; });
+  btn.textContent = "Working...";
+  try {
+    const r = await api("/api/profile?id=" + p.id + "&on=" + (on ? 1 : 0), "POST");
+    toast(r.message);
+  } catch (e) { toast(e.message, true); }
+  await load();
+}
+
+function renderScan() {
+  if (!STATE) return;
+  const comp = STATE.profiles.find(p => p.id === "competitive");
+  const byId = {};
+  STATE.tweaks.forEach(t => { byId[t.id] = t; });
+  const missing = comp.ids.map(id => byId[id]).filter(t => t && !t.enabled);
+
+  const box = $("boostScan");
+  box.replaceChildren(
+    el("div", { class: "card", style: "margin-bottom:14px" },
+      el("div", { class: "name", textContent: "Scan result" }),
+      el("div", { class: "desc", textContent: STATE.cpu + "  |  " + STATE.os }),
+      el("div", { class: "desc", textContent: (comp.total - missing.length) + " of " + comp.total + " Competitive tweaks are already on." })),
+    missing.length
+      ? section("Recommended for you (" + missing.length + ")", missing.map(tweakRow))
+      : el("div", { class: "card", textContent: "Nothing to do. Your PC already has every Competitive tweak." }));
+}
+
+async function scan() {
+  const btn = $("scanBtn");
+  btn.disabled = true; btn.textContent = "Scanning...";
+  try {
+    await load();
+    go("boost");
+    boostTab("scan");
+    const comp = STATE.profiles.find(p => p.id === "competitive");
+    toast("Scan done: " + comp.active + " of " + comp.total + " Competitive tweaks are on.");
+  } catch (e) { toast(e.message, true); }
+  btn.disabled = false; btn.textContent = "Scan System";
+}
+$("scanBtn").onclick = scan;
+
+/* ---------- fine tune page ---------- */
+function renderFine() {
+  const groups = {};
+  STATE.tweaks.forEach(t => { (groups[t.section] = groups[t.section] || []).push(tweakRow(t)); });
+  const names = FINE_ORDER.filter(n => groups[n]);
+
+  $("fineList").replaceChildren(...names.map(n => {
+    const s = section(n, groups[n]);
+    s.dataset.name = n;
+    return s;
+  }));
+
+  const chips = ["All"].concat(names);
+  $("chips").replaceChildren(...chips.map(n => {
+    const b = el("button", { textContent: n });
+    b.className = n === chip ? "on" : "";
+    b.onclick = () => { chip = n; renderChips(); applyFilter(); };
+    return b;
+  }));
+  applyFilter();
+}
+function renderChips() {
+  document.querySelectorAll("#chips button").forEach(b => b.classList.toggle("on", b.textContent === chip));
+}
+function applyFilter() {
+  const q = $("q").value.trim().toLowerCase();
+  document.querySelectorAll("#fineList > div").forEach(sec => {
+    let any = false;
+    sec.querySelectorAll(".row").forEach(r => {
+      const show = !q || r.dataset.search.includes(q);
+      r.hidden = !show;
+      if (show) any = true;
+    });
+    sec.hidden = !any || (chip !== "All" && sec.dataset.name !== chip);
+  });
+}
+$("q").oninput = applyFilter;
+
+/* ---------- tools page ---------- */
+function renderTools() {
+  const groups = {};
+  STATE.jobs.forEach(j => { (groups[j.section] = groups[j.section] || []).push(jobRow(j)); });
+  const blocks = TOOL_ORDER.filter(n => groups[n]).map(n => section(n, groups[n]));
+  if (STARTUP.length) blocks.push(section("Startup apps (on = starts with Windows)", STARTUP.map(startupRow)));
+  $("toolList").replaceChildren(...blocks);
+}
+
+/* ---------- home page ---------- */
+function renderHome() {
+  $("cpuName").textContent = STATE.cpu;
+  $("osLine").textContent = STATE.os;
+  $("quick").replaceChildren(...QUICK.map(q => {
+    const b = el("button", { class: "btn alt", textContent: q[1] });
+    b.onclick = () => runJob(q[0], b);
+    return b;
+  }));
+}
+
+function setBar(id, pct) {
+  const b = $(id);
+  b.style.width = pct + "%";
+  b.className = pct >= 85 ? "hot" : "";
+}
+
+async function poll() {
+  try {
+    const s = await api("/api/stats");
+    $("cpu").textContent = s.cpu + "%";   setBar("cpuBar", s.cpu);
+    $("ram").textContent = s.ramPct + "%"; setBar("ramBar", s.ramPct);
+    $("ramD").textContent = s.ramUsedGb + " of " + s.ramTotalGb + " GB in use";
+    $("disk").textContent = s.diskFreeGb + " GB";
+    setBar("diskBar", Math.round(100 - (s.diskFreeGb / s.diskTotalGb) * 100));
+    $("diskD").textContent = s.diskTotalGb + " GB total";
+  } catch (e) { }
+}
+
+/* ---------- loading ---------- */
+async function load() {
+  const results = await Promise.all([api("/api/state"), api("/api/startup")]);
+  STATE = results[0];
+  STARTUP = results[1];
+  renderHome();
+  renderProfiles();
+  renderScan();
+  renderFine();
+  renderTools();
+}
+
+/* ---------- sidebar buttons ---------- */
+$("fRestore").onclick = () => runJob("restore", $("fRestore"));
+$("fUndo").onclick = () => { if (confirm("Switch every tweak that is on back to Windows' own setting?")) runJob("undo", $("fUndo")); };
+$("fQuit").onclick = async () => {
+  try { await api("/api/quit", "POST"); } catch (e) { }
+  document.body.innerHTML = '<p style="margin:40px;font-size:18px">Tweak Panel has closed. You can close this tab.</p>';
+};
+
+go("home");
+load().catch(e => toast(e.message, true));
+poll();
+setInterval(poll, 2000);
+</script>
+</body>
+</html>
+
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
+    <security>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+</assembly>
